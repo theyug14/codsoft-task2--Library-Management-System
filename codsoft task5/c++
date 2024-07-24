@@ -1,0 +1,141 @@
+#include <iostream>
+#include <vector>
+#include <string>
+#include <map>
+#include <ctime>
+
+class Book {
+public:
+    std::string title;
+    std::string author;
+    std::string ISBN;
+    bool isAvailable;
+
+    Book(std::string t, std::string a, std::string i) : title(t), author(a), ISBN(i), isAvailable(true) {}
+};
+
+class Borrower {
+public:
+    std::string name;
+    std::map<std::string, time_t> borrowedBooks;
+
+    Borrower(std::string n) : name(n) {}
+};
+
+class Library {
+private:
+    std::vector<Book> books;
+    std::map<std::string, Borrower> borrowers;
+
+public:
+    void addBook(std::string title, std::string author, std::string ISBN) {
+        books.push_back(Book(title, author, ISBN));
+    }
+
+    void searchBook(std::string searchTerm) {
+        for (const auto& book : books) {
+            if (book.title.find(searchTerm) != std::string::npos || book.author.find(searchTerm) != std::string::npos || book.ISBN.find(searchTerm) != std::string::npos) {
+                std::cout << "Title: " << book.title << ", Author: " << book.author << ", ISBN: " << book.ISBN << ", Available: " << (book.isAvailable ? "Yes" : "No") << std::endl;
+            }
+        }
+    }
+
+    void checkoutBook(std::string borrowerName, std::string ISBN) {
+        for (auto& book : books) {
+            if (book.ISBN == ISBN && book.isAvailable) {
+                book.isAvailable = false;
+                borrowers[borrowerName].borrowedBooks[ISBN] = time(0);
+                std::cout << "Book checked out successfully.\n";
+                return;
+            }
+        }
+        std::cout << "Book not available.\n";
+    }
+
+    void returnBook(std::string borrowerName, std::string ISBN) {
+        for (auto& book : books) {
+            if (book.ISBN == ISBN && !book.isAvailable) {
+                book.isAvailable = true;
+                time_t borrowedTime = borrowers[borrowerName].borrowedBooks[ISBN];
+                borrowers[borrowerName].borrowedBooks.erase(ISBN);
+                calculateFine(borrowedTime);
+                std::cout << "Book returned successfully.\n";
+                return;
+            }
+        }
+        std::cout << "Book not found.\n";
+    }
+
+    void calculateFine(time_t borrowedTime) {
+        time_t now = time(0);
+        double seconds = difftime(now, borrowedTime);
+        int days = seconds / (60 * 60 * 24);
+        if (days > 14) {
+            int fine = (days - 14) * 5;  // Assume $5 fine per day overdue
+            std::cout << "Overdue fine: $" << fine << std::endl;
+        } else {
+            std::cout << "No fine.\n";
+        }
+    }
+
+    void userInterface() {
+        int choice;
+        std::string title, author, ISBN, borrowerName;
+
+        while (true) {
+            std::cout << "Library Management System\n";
+            std::cout << "1. Add Book\n";
+            std::cout << "2. Search Book\n";
+            std::cout << "3. Checkout Book\n";
+            std::cout << "4. Return Book\n";
+            std::cout << "5. Exit\n";
+            std::cout << "Enter your choice: ";
+            std::cin >> choice;
+
+            switch (choice) {
+                case 1:
+                    std::cout << "Enter title: ";
+                    std::cin.ignore();
+                    std::getline(std::cin, title);
+                    std::cout << "Enter author: ";
+                    std::getline(std::cin, author);
+                    std::cout << "Enter ISBN: ";
+                    std::getline(std::cin, ISBN);
+                    addBook(title, author, ISBN);
+                    break;
+                case 2:
+                    std::cout << "Enter title, author or ISBN to search: ";
+                    std::cin.ignore();
+                    std::getline(std::cin, title);  // Using title variable for search term
+                    searchBook(title);
+                    break;
+                case 3:
+                    std::cout << "Enter borrower name: ";
+                    std::cin.ignore();
+                    std::getline(std::cin, borrowerName);
+                    std::cout << "Enter ISBN: ";
+                    std::getline(std::cin, ISBN);
+                    checkoutBook(borrowerName, ISBN);
+                    break;
+                case 4:
+                    std::cout << "Enter borrower name: ";
+                    std::cin.ignore();
+                    std::getline(std::cin, borrowerName);
+                    std::cout << "Enter ISBN: ";
+                    std::getline(std::cin, ISBN);
+                    returnBook(borrowerName, ISBN);
+                    break;
+                case 5:
+                    return;
+                default:
+                    std::cout << "Invalid choice. Try again.\n";
+            }
+        }
+    }
+};
+
+int main() {
+    Library library;
+    library.userInterface();
+    return 0;
+}
